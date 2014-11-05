@@ -1,0 +1,862 @@
+<?xml version="1.0"?>
+<!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
+<modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
+    <id>FunCaptcha:FunCaptcha</id>
+    <version>2.8</version>
+    <file name="$sourcedir/ManageSettings.php">
+        <operation>
+            <search position="after"><![CDATA[			// Clever Thomas, who is looking sheepy now? Not I, the mighty sword swinger did say.
+]]></search>
+            <add><![CDATA[
+			// Funcaptcha Settings.
+			array('title', 'funcaptcha_settings'),
+			array('check', 'funcaptcha_is_active'),
+                        'fct' => array('select', 'fc_theme', 'subtext' => $txt['setting_fc_theme_desc'], array(0 => $txt['fc_theme_standard'], 2 => $txt['fc_theme_vbulletin'], 3 => $txt['fc_theme_white'], 4 => $txt['fc_theme_black'], 5 => $txt['fc_theme_automotive'])),
+                        'fcsl' => array('select', 'fc_security', 'subtext' => $txt['setting_fc_security_desc'],array($txt['fc_security_auto'], $txt['fc_security_enhanced'])),
+                        'fcin' => array('select', 'fc_lightbox', 'subtext' => $txt['fc_lightbox_desc'], array($txt['fc_lightbox_inline'], $txt['fc_lightbox_on'])),
+                        array('check', 'fc_js_fallback','subtext' => $txt['setting_fc_js_fallback_desc'],),
+                        array('text', 'fc_public_key', 'size' => 50, 'subtext' => $txt['fc_public_key_desc']),
+                        array('text', 'fc_private_key', 'size' => 50, 'subtext' => $txt['fc_private_key_desc']),
+                        array('text', 'fc_proxy', 'size' => 30, 'subtext' => $txt['fc_proxy_desc']),
+                        array('callback', 'funcaptcha_iframe'),
+                            
+]]></add>
+        </operation>
+    </file>
+    <file name="$sourcedir/PersonalMessage.php">
+        <operation>
+            <search position="replace"><![CDATA[
+	// Wrong verification code?
+	if (!$user_info['is_admin'] && !empty($modSettings['pm_posts_verification']) && $user_info['posts'] < $modSettings['pm_posts_verification'])
+	{
+		require_once($sourcedir . '/Subs-Editor.php');
+		$verificationOptions = array(
+			'id' => 'pm',
+		);
+		$context['require_verification'] = create_control_verification($verificationOptions, true);
+
+		if (is_array($context['require_verification']))
+		{
+			$post_errors = array_merge($post_errors, $context['require_verification']);
+		}
+	}
+]]></search>
+            <add><![CDATA[
+	// Wrong verification code?
+	if (!$user_info['is_admin'] && !empty($modSettings['pm_posts_verification']) && $user_info['posts'] < $modSettings['pm_posts_verification'])
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+                    require_once($sourcedir . '/funcaptcha.php');
+                    $funcaptcha =  new FUNCAPTCHA();
+                    $funcaptcha->setProxy($modSettings['fc_proxy']);
+                    $funcaptcha->setTheme($modSettings['fc_theme']);
+                    $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+                    $score = $funcaptcha->checkResult($modSettings['fc_private_key']);
+                    
+
+                    if (!$score) {
+                        $post_errors = array_merge($post_errors, array(0 => 'wrong_funcaptcha'));
+                    }
+		}
+		else
+		{
+			require_once($sourcedir . '/Subs-Editor.php');
+			$verificationOptions = array(
+				'id' => 'pm',
+			);
+			$context['require_verification'] = create_control_verification($verificationOptions, true);
+
+			if (is_array($context['require_verification']))
+			{
+				$post_errors = array_merge($post_errors, $context['require_verification']);
+		}	}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$sourcedir/Post.php">
+        <operation>
+            <search position="replace"><![CDATA[
+	// Wrong verification code?
+	if (!$user_info['is_admin'] && !$user_info['is_mod'] && !empty($modSettings['posts_require_captcha']) && ($user_info['posts'] < $modSettings['posts_require_captcha'] || ($user_info['is_guest'] && $modSettings['posts_require_captcha'] == -1)))
+	{
+		require_once($sourcedir . '/Subs-Editor.php');
+		$verificationOptions = array(
+			'id' => 'post',
+		);
+		$context['require_verification'] = create_control_verification($verificationOptions, true);
+		if (is_array($context['require_verification']))
+			$post_errors = array_merge($post_errors, $context['require_verification']);
+	}
+]]></search>
+            <add><![CDATA[
+	// Wrong verification code?
+	if (!$user_info['is_admin'] && !$user_info['is_mod'] && !empty($modSettings['posts_require_captcha']) && ($user_info['posts'] < $modSettings['posts_require_captcha'] || ($user_info['is_guest'] && $modSettings['posts_require_captcha'] == -1)))
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+                    require_once($sourcedir . '/funcaptcha.php');
+                    $funcaptcha =  new FUNCAPTCHA();
+                    $funcaptcha->setProxy($modSettings['fc_proxy']);
+                    $funcaptcha->setTheme($modSettings['fc_theme']);
+                    $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+                    $score = $funcaptcha->checkResult($modSettings['fc_private_key']);
+                    
+
+                    if (!$score) {
+                        $post_errors = array_merge($post_errors, array(0 => 'wrong_funcaptcha'));
+                    }
+		}
+		else
+		{
+			require_once($sourcedir . '/Subs-Editor.php');
+			$verificationOptions = array(
+				'id' => 'post',
+			);
+			$context['require_verification'] = create_control_verification($verificationOptions, true);
+			if (is_array($context['require_verification']))
+				$post_errors = array_merge($post_errors, $context['require_verification']);
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$sourcedir/Register.php">
+        <operation>
+            <search position="replace"><![CDATA[
+		// Check whether the visual verification code was entered correctly.
+		if (!empty($modSettings['reg_verification']))
+		{
+			require_once($sourcedir . '/Subs-Editor.php');
+			$verificationOptions = array(
+				'id' => 'register',
+			);
+			$context['visual_verification'] = create_control_verification($verificationOptions, true);
+
+			if (is_array($context['visual_verification']))
+			{
+				loadLanguage('Errors');
+				foreach ($context['visual_verification'] as $error)
+					$reg_errors[] = $txt['error_' . $error];
+			}
+		}
+]]></search>
+            <add><![CDATA[
+		// Check whether the visual verification code was entered correctly.
+		if (!empty($modSettings['reg_verification']))
+		{
+			if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+                        {
+                            require_once($sourcedir . '/funcaptcha.php');
+                            $funcaptcha =  new FUNCAPTCHA();
+                            $funcaptcha->setProxy($modSettings['fc_proxy']);
+                            $funcaptcha->setTheme($modSettings['fc_theme']);
+                            $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+                            $score = $funcaptcha->checkResult($modSettings['fc_private_key']);
+
+
+                            if (!$score) {
+                                $reg_errors[] = array_merge($post_errors, array(0 => 'error_wrong_funcaptcha'));
+                            }
+                        }
+			else
+			{
+				require_once($sourcedir . '/Subs-Editor.php');
+				$verificationOptions = array(
+					'id' => 'register',
+				);
+				$context['visual_verification'] = create_control_verification($verificationOptions, true);
+	
+				if (is_array($context['visual_verification']))
+				{
+					loadLanguage('Errors');
+					foreach ($context['visual_verification'] as $error)
+						$reg_errors[] = $txt['error_' . $error];
+				}
+			}
+		}
+]]></add>
+        </operation>
+    </file>
+    <file name="$sourcedir/Search.php">
+        <operation>
+            <search position="replace"><![CDATA[
+	// Do we have captcha enabled?
+	if ($user_info['is_guest'] && !empty($modSettings['search_enable_captcha']) && empty($_SESSION['ss_vv_passed']) && (empty($_SESSION['last_ss']) || $_SESSION['last_ss'] != $search_params['search']))
+	{
+		// If we come from another search box tone down the error...
+		if (!isset($_REQUEST['search_vv']))
+			$context['search_errors']['need_verification_code'] = true;
+		else
+		{
+			require_once($sourcedir . '/Subs-Editor.php');
+			$verificationOptions = array(
+				'id' => 'search',
+			);
+			$context['require_verification'] = create_control_verification($verificationOptions, true);
+
+			if (is_array($context['require_verification']))
+			{
+				foreach ($context['require_verification'] as $error)
+					$context['search_errors'][$error] = true;
+			}
+			// Don't keep asking for it - they've proven themselves worthy.
+			else
+				$_SESSION['ss_vv_passed'] = true;
+		}
+	}
+]]></search>
+            <add><![CDATA[
+	// Do we have captcha enabled?
+	if ($user_info['is_guest'] && !empty($modSettings['search_enable_captcha']) && empty($_SESSION['ss_vv_passed']) && (empty($_SESSION['last_ss']) || $_SESSION['last_ss'] != $search_params['search']))
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+                {
+                    require_once($sourcedir . '/funcaptcha.php');
+                    $funcaptcha =  new FUNCAPTCHA();
+                    $funcaptcha->setProxy($modSettings['fc_proxy']);
+                    $funcaptcha->setTheme($modSettings['fc_theme']);
+                    $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+                    $score = $funcaptcha->checkResult($modSettings['fc_private_key']);
+
+
+                    if (!$score) {
+                        $context['search_errors']['wrong_funcaptcha'] = true;
+                    }
+                }
+		else
+		{
+			// If we come from another search box tone down the error...
+			if (!isset($_REQUEST['search_vv']))
+				$context['search_errors']['need_verification_code'] = true;
+			else
+			{
+				require_once($sourcedir . '/Subs-Editor.php');
+				$verificationOptions = array(
+					'id' => 'search',
+				);
+				$context['require_verification'] = create_control_verification($verificationOptions, true);
+
+				if (is_array($context['require_verification']))
+				{
+					foreach ($context['require_verification'] as $error)
+						$context['search_errors'][$error] = true;
+				}
+				// Don't keep asking for it - they've proven themselves worthy.
+				else
+					$_SESSION['ss_vv_passed'] = true;
+			}
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$sourcedir/SendTopic.php">
+        <operation>
+            <search position="replace"><![CDATA[
+	// Could they get the right verification code?
+	if ($user_info['is_guest'] && !empty($modSettings['guests_report_require_captcha']))
+	{
+		require_once($sourcedir . '/Subs-Editor.php');
+		$verificationOptions = array(
+			'id' => 'report',
+		);
+		$context['require_verification'] = create_control_verification($verificationOptions, true);
+		if (is_array($context['require_verification']))
+			$post_errors = array_merge($post_errors, $context['require_verification']);
+	}
+]]></search>
+            <add><![CDATA[
+	// Could they get the right verification code?
+	if ($user_info['is_guest'] && !empty($modSettings['guests_report_require_captcha']))
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+                    require_once($sourcedir . '/funcaptcha.php');
+                    $funcaptcha =  new FUNCAPTCHA();
+                    $funcaptcha->setProxy($modSettings['fc_proxy']);
+                    $funcaptcha->setTheme($modSettings['fc_theme']);
+                    $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+                    $score = $funcaptcha->checkResult($modSettings['fc_private_key']);
+                    
+
+                    if (!$score) {
+                        $post_errors = array_merge($post_errors, array(0 => 'wrong_funcaptcha'));
+                    }
+		}
+		else
+		{
+			require_once($sourcedir . '/Subs-Editor.php');
+			$verificationOptions = array(
+				'id' => 'report',
+			);
+			$context['require_verification'] = create_control_verification($verificationOptions, true);
+			if (is_array($context['require_verification']))
+				$post_errors = array_merge($post_errors, $context['require_verification']);
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/Display.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+function template_main()
+{
+	global $context, $settings, $options, $txt, $scripturl, $modSettings]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+			// Is visual verification enabled?
+			if ($context['require_verification'])
+				echo '
+							<strong>', $txt['verification'], ':</strong>', template_control_verification($context['visual_verification_id'], 'quick_reply'), '<br />';
+]]></search>
+            <add><![CDATA[
+			// Is visual verification enabled?
+			if ($context['require_verification'])
+			{
+				if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+                                {
+                                        
+                                                                require_once($sourcedir . '/funcaptcha.php');
+                                                                $funcaptcha =  new FUNCAPTCHA();
+                                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                                $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                                //only show HTML/label if not lightbox mode.
+                                                                if ($modSettings['fc_lightbox']) {
+                                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                                } else {
+                                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                                        $output = $output . "</li></div></div>";
+                                                                }
+
+                                                                echo $output;
+                                }
+				else
+				{
+					echo '
+							<strong>', $txt['verification'], ':</strong>', template_control_verification($context['visual_verification_id'], 'quick_reply'), '<br />';
+				}
+			}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/PersonalMessage.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+function template_send()
+{
+	global $context, $settings, $options, $scripturl, $modSettings, $txt]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+	// Require an image to be typed to save spamming?
+	if ($context['require_verification'])
+	{
+		echo '
+				<div class="post_verification">
+					<strong>', $txt['pm_visual_verification_label'], ':</strong>
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</div>';
+	}
+]]></search>
+            <add><![CDATA[
+	// Require an image to be typed to save spamming?
+	if ($context['require_verification'])
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+			echo '
+				<div class="post_verification">';
+						require_once($sourcedir . '/funcaptcha.php');
+                                                $funcaptcha =  new FUNCAPTCHA();
+                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                //only show HTML/label if not lightbox mode.
+                                                if ($modSettings['fc_lightbox']) {
+                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                } else {
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        $output = $output . "</li></div></div>";
+                                                }
+
+                                                echo $output;
+					echo '
+				</div>';
+		}
+		else
+		{
+			echo '
+				<div class="post_verification">
+					<strong>', $txt['pm_visual_verification_label'], ':</strong>
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</div>';
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/Post.template.php">
+        <operation>
+            <search position="before"><![CDATA[// The main template for the post page.
+function template_main()
+{
+	global $context, $settings, $options, $txt, $scripturl, $modSettings, $counter]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+	// Is visual verification enabled?
+	if ($context['require_verification'])
+	{
+		echo '
+					<div class="post_verification">
+						<span', !empty($context['post_error']['need_qr_verification']) ? ' class="error"' : '', '>
+							<strong>', $txt['verification'], ':</strong>
+						</span>
+						', template_control_verification($context['visual_verification_id'], 'all'), '
+					</div>';
+	}
+]]></search>
+            <add><![CDATA[
+	// Is visual verification enabled?
+	if ($context['require_verification'])
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+			echo '
+				<div class="post_verification">';
+						require_once($sourcedir . '/funcaptcha.php');
+                                                $funcaptcha =  new FUNCAPTCHA();
+                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                //only show HTML/label if not lightbox mode.
+                                                if ($modSettings['fc_lightbox']) {
+                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                } else {
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        $output = $output . "</li></div></div>";
+                                                }
+
+                                                echo $output;
+					echo '
+				</div>';
+		}
+		else
+		{
+			echo '
+					<div class="post_verification">
+						<span', !empty($context['post_error']['need_qr_verification']) ? ' class="error"' : '', '>
+							<strong>', $txt['verification'], ':</strong>
+						</span>
+						', template_control_verification($context['visual_verification_id'], 'all'), '
+					</div>';
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/SendTopic.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+function template_report()
+{
+	global $context, $settings, $options, $txt, $scripturl]]></search>
+            <add><![CDATA[, $sourcedir, $modSettings]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+	if ($context['require_verification'])
+	{
+		echo '
+							<dt>
+								', $txt['verification'], ':
+							</dt>
+							<dd>
+								', template_control_verification($context['visual_verification_id'], 'all'), '
+							</dd>';
+	}
+]]></search>
+            <add><![CDATA[
+	if ($context['require_verification'])
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+						require_once($sourcedir . '/funcaptcha.php');
+                                                $funcaptcha =  new FUNCAPTCHA();
+                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                //only show HTML/label if not lightbox mode.
+                                                if ($modSettings['fc_lightbox']) {
+                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                } else {
+                                                        $output = '<dt>', $txt['funcaptha_heading'], '</dt><dd>;
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        $output = $output . "</li></div></div>";
+                                                        $output = $output . '</dd>';
+                                                }
+
+                                                echo $output;
+		}
+		else
+		{
+			echo '
+							<dt>
+								', $txt['verification'], ':
+							</dt>
+							<dd>
+								', template_control_verification($context['visual_verification_id'], 'all'), '
+							</dd>';
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/Register.template.php">
+        <operation>
+            <search position="before"><![CDATA[// Before registering - get their information.
+function template_registration_form()
+{
+	global $context, $settings, $options, $scripturl, $txt, $modSettings]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+	if ($context['visual_verification'])
+	{
+		echo '
+			<div class="title_bar">
+				<h4 class="titlebg">', $txt['verification'], '</h4>
+			</div>
+			<div class="windowbg2">
+				<span class="topslice"><span></span></span>
+				<fieldset class="content centertext">
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</fieldset>
+				<span class="botslice"><span></span></span>
+			</div>';
+	}
+]]></search>
+            <add><![CDATA[
+	if ($context['visual_verification'])
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+			
+						require_once($sourcedir . '/funcaptcha.php');
+                                                $funcaptcha =  new FUNCAPTCHA();
+                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                //only show HTML/label if not lightbox mode.
+                                                if ($modSettings['fc_lightbox']) {
+                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                } else {
+                                                        echo '
+                                                            <div class="title_bar">
+                                                                    <h4 class="titlebg">', $txt['verification'], '</h4>
+                                                            </div>
+                                                            <div class="windowbg2">
+                                                                    <span class="topslice"><span></span></span>
+                                                                    <fieldset class="content centertext">';
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        $output = $output . "</li></div></div>";
+                                                        echo '</fieldset>
+                                                                <span class="botslice"><span></span></span>
+                                                        </div>';
+                                                }
+
+                                                echo $output;
+					echo '
+				</div>';
+		}
+		else
+		{
+			echo '
+				<div class="title_bar">
+					<h4 class="titlebg">', $txt['verification'], '</h4>
+				</div>
+				<div class="windowbg2">
+					<span class="topslice"><span></span></span>
+					<fieldset class="content centertext">
+						', template_control_verification($context['visual_verification_id'], 'all'), '
+					</fieldset>
+					<span class="botslice"><span></span></span>
+				</div>';
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/Search.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+function template_main()
+{
+	global $context, $settings, $options, $txt, $scripturl, $modSettings]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[					', $context['require_verification'] ? '' : '&nbsp;<input type="submit" name="submit" value="' . $txt['search'] . '" class="button_submit" />
+				</div>';]]></search>
+            <add><![CDATA[					', $context['require_verification'] ? '' : '&nbsp;<input type="submit" name="submit" value="' . $txt['search'] . '" class="button_submit" />', '
+				</div>';]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+		if ($context['require_verification'])
+			echo '
+				<div class="verification>
+					<strong>', $txt['search_visual_verification_label'], ':</strong>
+					<br />', template_control_verification($context['visual_verification_id'], 'all'), '<br />
+					<input id="submit" type="submit" name="submit" value="' . $txt['search'] . '" class="button_submit" />
+				</div>';
+]]></search>
+            <add><![CDATA[
+		if ($context['require_verification'])
+		{
+			if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+                        {
+                                echo '
+                                        <div class="post_verification">';
+                                                        require_once($sourcedir . '/funcaptcha.php');
+                                                        $funcaptcha =  new FUNCAPTCHA();
+                                                        $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                        $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                        $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                        $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                        $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                        //only show HTML/label if not lightbox mode.
+                                                        if ($modSettings['fc_lightbox']) {
+                                                                $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        } else {
+                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                                $output = $output . "</li></div></div>";
+                                                        }
+
+                                                        echo $output;
+                                                echo '
+                                        </div>';
+                        }
+			else
+			{
+				echo '
+					<div class="verification">
+						<strong>', $txt['search_visual_verification_label'], ':</strong>
+						<br />', template_control_verification($context['visual_verification_id'], 'all'), '<br />
+						<input id="submit" type="submit" name="submit" value="' . $txt['search'] . '" class="button_submit" />
+					</div>';
+			}
+		}
+]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+		// Require an image to be typed to save spamming?
+		if ($context['require_verification'])
+		{
+			echo '
+				<p>
+					<strong>', $txt['verification'], ':</strong>
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</p>';
+		}
+]]></search>
+            <add><![CDATA[
+		// Require an image to be typed to save spamming?
+		if ($context['require_verification'])
+		{
+			if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+                        {
+                                echo '
+                                        <div>';
+                                                        require_once($sourcedir . '/funcaptcha.php');
+                                                        $funcaptcha =  new FUNCAPTCHA();
+                                                        $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                        $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                        $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                        $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                        $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                        //only show HTML/label if not lightbox mode.
+                                                        if ($modSettings['fc_lightbox']) {
+                                                                $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        } else {
+                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                                $output = $output . "</li></div></div>";
+                                                        }
+
+                                                        echo $output;
+                                                echo '
+                                        </div>';
+                        }
+			else
+			{
+				echo '
+					<p>
+						<strong>', $txt['verification'], ':</strong>
+						', template_control_verification($context['visual_verification_id'], 'all'), '
+					</p>';
+			}
+		}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themes_dir/core/Display.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+function template_main()
+{
+	global $context, $settings, $options, $txt, $scripturl, $modSettings]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+		// Is visual verification enabled?
+		if ($context['require_verification'])
+			echo '
+				<strong>', $txt['verification'], ':</strong>', template_control_verification($context['visual_verification_id'], 'quick_reply'), '<br />';
+]]></search>
+            <add><![CDATA[
+		// Is visual verification enabled?
+		if ($context['require_verification'])
+		{
+			if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+                        {
+                                echo '
+                                        <div class="post_verification">';
+                                                        require_once($sourcedir . '/funcaptcha.php');
+                                                        $funcaptcha =  new FUNCAPTCHA();
+                                                        $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                        $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                        $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                        $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                        $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                        //only show HTML/label if not lightbox mode.
+                                                        if ($modSettings['fc_lightbox']) {
+                                                                $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        } else {
+                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                                $output = $output . "</li></div></div>";
+                                                        }
+
+                                                        echo $output;
+                                                echo '
+                                        </div>';
+                        }
+			else
+			{
+			echo '
+				<strong>', $txt['verification'], ':</strong>', template_control_verification($context['visual_verification_id'], 'quick_reply'), '<br />';
+			}
+		}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themes_dir/core/PersonalMessage.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+function template_send()
+{
+	global $context, $settings, $options, $scripturl, $modSettings, $txt]]></search>
+            <add><![CDATA[, $sourcedir]]></add>
+        </operation>
+        <operation>
+            <search position="replace"><![CDATA[
+	// Require an image to be typed to save spamming?
+	if ($context['require_verification'])
+	{
+		echo '
+				<div class="post_verification">
+					<strong>', $txt['pm_visual_verification_label'], ':</strong>
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</div>';
+	}
+]]></search>
+            <add><![CDATA[
+	// Require an image to be typed to save spamming?
+	if ($context['require_verification'])
+	{
+		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
+		{
+			echo '
+				<div class="post_verification">';
+						require_once($sourcedir . '/funcaptcha.php');
+                                                $funcaptcha =  new FUNCAPTCHA();
+                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
+                                                $funcaptcha->setTheme($modSettings['fc_theme']);
+                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+
+                                                //only show HTML/label if not lightbox mode.
+                                                if ($modSettings['fc_lightbox']) {
+                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                } else {
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                                                        $output = $output . "</li></div></div>";
+                                                }
+
+                                                echo $output;
+					echo '
+				</div>';
+		}
+		else
+		{
+			echo '
+				<div class="post_verification">
+					<strong>', $txt['pm_visual_verification_label'], ':</strong>
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</div>';
+		}
+	}
+]]></add>
+        </operation>
+    </file>
+    <file name="$themedir/Admin.template.php">
+        <operation>
+            <search position="before"><![CDATA[
+// This little beauty shows questions and answer from the captcha type feature.]]></search>
+            <add><![CDATA[
+            //Funcaptcha callback for iframe
+            function template_callback_funcaptcha_iframe() {
+    echo '<dd style="width: 100%"><div class="fc-frame" style="margin-left: auto;margin-right: auto;background: white;width: 89%;margin-top: 20px;border: ridge 4px;text-align: center;"><h3>FunCaptcha Registration</h3><p>You can register for your public and private keys below or at our <a href="http://www.funcaptcha.co/" target="_blank">website</a>.</p><iframe id="reg-fc" src="https://www.funcaptcha.co/wp-fc-register?plugin=vbulletin" scrolling="no" frameBorder="0" height="450px;" width="400px"></iframe></div></dd>';
+}
+]]></add>
+        </operation>
+    </file>
+</modification>
