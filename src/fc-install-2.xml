@@ -2,7 +2,7 @@
 <!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
 <modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
     <id>FunCaptcha:FunCaptcha</id>
-    <version>2.8</version>
+    <version>1.0.0.0</version>
     <file name="$sourcedir/ManageSettings.php">
         <operation>
             <search position="after"><![CDATA[			// Clever Thomas, who is looking sheepy now? Not I, the mighty sword swinger did say.
@@ -13,7 +13,7 @@
 			array('check', 'funcaptcha_is_active'),
                         'fct' => array('select', 'fc_theme', 'subtext' => $txt['setting_fc_theme_desc'], array(0 => $txt['fc_theme_standard'], 2 => $txt['fc_theme_vbulletin'], 3 => $txt['fc_theme_white'], 4 => $txt['fc_theme_black'], 5 => $txt['fc_theme_automotive'])),
                         'fcsl' => array('select', 'fc_security', 'subtext' => $txt['setting_fc_security_desc'],array($txt['fc_security_auto'], $txt['fc_security_enhanced'])),
-                        'fcin' => array('select', 'fc_lightbox', 'subtext' => $txt['fc_lightbox_desc'], array($txt['fc_lightbox_inline'], $txt['fc_lightbox_on'])),
+                        //'fcin' => array('select', 'fc_lightbox', 'subtext' => $txt['fc_lightbox_desc'], array($txt['fc_lightbox_inline'], $txt['fc_lightbox_on'])),
                         array('check', 'fc_js_fallback','subtext' => $txt['setting_fc_js_fallback_desc'],),
                         array('text', 'fc_public_key', 'size' => 50, 'subtext' => $txt['fc_public_key_desc']),
                         array('text', 'fc_private_key', 'size' => 50, 'subtext' => $txt['fc_private_key_desc']),
@@ -333,7 +333,7 @@ function template_main()
                                                                 if ($modSettings['fc_lightbox']) {
                                                                         $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                                 } else {
-                                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none;'>";
                                                                         $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                                         $output = $output . "</li></div></div>";
                                                                 }
@@ -389,7 +389,7 @@ function template_send()
                                                 if ($modSettings['fc_lightbox']) {
                                                         $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                 } else {
-                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none; width: 309px; margin: 0 auto;'>";
                                                         $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         $output = $output . "</li></div></div>";
                                                 }
@@ -452,7 +452,7 @@ function template_main()
                                                 if ($modSettings['fc_lightbox']) {
                                                         $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                 } else {
-                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none; width: 309px; margin: 0 auto;'>";
                                                         $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         $output = $output . "</li></div></div>";
                                                 }
@@ -513,8 +513,8 @@ function template_report()
                                                 if ($modSettings['fc_lightbox']) {
                                                         $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                 } else {
-                                                        $output = '<dt>', $txt['funcaptha_heading'], '</dt><dd>;
-                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = '<dt>' . $txt['funcaptha_heading'] . '</dt><dd>';
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none; width: 309px; margin: 0 auto;'>";
                                                         $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         $output = $output . "</li></div></div>";
                                                         $output = $output . '</dd>';
@@ -562,56 +562,55 @@ function template_registration_form()
 	}
 ]]></search>
             <add><![CDATA[
-	if ($context['visual_verification'])
+	if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
 	{
-		if(!empty($modSettings['funcaptcha_is_active']) && ($modSettings['funcaptcha_is_active'] == 1 && !empty($modSettings['fc_public_key']) && !empty($modSettings['fc_private_key'])))
-		{
-			
-						require_once($sourcedir . '/funcaptcha.php');
-                                                $funcaptcha =  new FUNCAPTCHA();
-                                                $funcaptcha->setSecurityLevel($modSettings['fc_security']);
-                                                $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
-                                                $funcaptcha->setProxy($modSettings['fc_proxy']);
-                                                $funcaptcha->setTheme($modSettings['fc_theme']);
-                                                $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
+		
+		require_once($sourcedir . '/funcaptcha.php');
+        $funcaptcha =  new FUNCAPTCHA();
+        $funcaptcha->setSecurityLevel($modSettings['fc_security']);
+        $funcaptcha->setLightboxMode($modSettings['fc_lightbox']);
+        $funcaptcha->setProxy($modSettings['fc_proxy']);
+        $funcaptcha->setTheme($modSettings['fc_theme']);
+        $funcaptcha->setNoJSFallback($modSettings['fc_js_fallback']);
 
-                                                //only show HTML/label if not lightbox mode.
-                                                if ($modSettings['fc_lightbox']) {
-                                                        $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
-                                                } else {
-                                                        echo '
-                                                            <div class="title_bar">
-                                                                    <h4 class="titlebg">', $txt['verification'], '</h4>
-                                                            </div>
-                                                            <div class="windowbg2">
-                                                                    <span class="topslice"><span></span></span>
-                                                                    <fieldset class="content centertext">';
-                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
-                                                        $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
-                                                        $output = $output . "</li></div></div>";
-                                                        echo '</fieldset>
-                                                                <span class="botslice"><span></span></span>
-                                                        </div>';
-                                                }
+        //only show HTML/label if not lightbox mode.
+        if ($modSettings['fc_lightbox']) {
+                $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+        } else {
+                echo '
+                    <div class="title_bar">
+                            <h4 class="titlebg">', $txt['verification'], '</h4>
+                    </div>
+                    <div class="windowbg2">
+                            <span class="topslice"><span></span></span>
+                            <fieldset class="content centertext">
+                                <div class=\"blockrow\">
+                                	<input type=hidden value="1" id="humanverify" name="humanverify" />
+                                	<div class=\"group\"><li style="list-style: none;">';
+                echo $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
+                echo "</li></div></div>";
+                echo '</fieldset>
+                        <span class="botslice"><span></span></span>
+                </div>';
+        }
 
-                                                echo $output;
-					echo '
-				</div>';
-		}
-		else
-		{
-			echo '
-				<div class="title_bar">
-					<h4 class="titlebg">', $txt['verification'], '</h4>
-				</div>
-				<div class="windowbg2">
-					<span class="topslice"><span></span></span>
-					<fieldset class="content centertext">
-						', template_control_verification($context['visual_verification_id'], 'all'), '
-					</fieldset>
-					<span class="botslice"><span></span></span>
-				</div>';
-		}
+        echo $output;
+		echo '
+		</div>';
+	}
+	else
+	{
+		echo '
+			<div class="title_bar">
+				<h4 class="titlebg">', $txt['verification'], '</h4>
+			</div>
+			<div class="windowbg2">
+				<span class="topslice"><span></span></span>
+				<fieldset class="content centertext">
+					', template_control_verification($context['visual_verification_id'], 'all'), '
+				</fieldset>
+				<span class="botslice"><span></span></span>
+			</div>';
 	}
 ]]></add>
         </operation>
@@ -659,7 +658,7 @@ function template_main()
                                                         if ($modSettings['fc_lightbox']) {
                                                                 $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         } else {
-                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none;'>";
                                                                 $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                                 $output = $output . "</li></div></div>";
                                                         }
@@ -712,7 +711,7 @@ function template_main()
                                                         if ($modSettings['fc_lightbox']) {
                                                                 $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         } else {
-                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none;'>";
                                                                 $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                                 $output = $output . "</li></div></div>";
                                                         }
@@ -768,7 +767,7 @@ function template_main()
                                                         if ($modSettings['fc_lightbox']) {
                                                                 $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         } else {
-                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                                $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none; width: 309px; margin: 0 auto;'>";
                                                                 $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                                 $output = $output . "</li></div></div>";
                                                         }
@@ -826,7 +825,7 @@ function template_send()
                                                 if ($modSettings['fc_lightbox']) {
                                                         $output = $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                 } else {
-                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li>";
+                                                        $output = "<div class=\"blockrow\"><input type=hidden value='1' id='humanverify' name='humanverify' /><div class=\"group\"><li style='list-style: none; width: 309px; margin: 0 auto;'>";
                                                         $output = $output . $funcaptcha->getFunCaptcha($modSettings['fc_public_key']);
                                                         $output = $output . "</li></div></div>";
                                                 }
