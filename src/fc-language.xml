@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
+<modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
+    <id>FunCaptcha:FunCaptcha</id>
+    <version>1.0.0.0</version>
+    <file name="$languagedir/index.english.php">
+        <operation>
+            <search position="after"><![CDATA[$txt['notification_enable_board'] = 'Are you sure you wish to enable notification of new topics for this board?';]]></search>
+            <add><![CDATA[
+// FunCaptcha for SMF
+$txt['funcaptha_heading'] = 'Anti-spam';
+
+]]></add>
+        </operation>
+    </file>
+    <file name="$languagedir/Errors.english.php">
+        <operation>
+            <search position="after"><![CDATA[$txt['smiley_not_found'] = 'Smiley not found.';]]></search>
+            <add><![CDATA[
+// FunCaptcha for SMF
+$txt['error_wrong_funcaptcha'] = 'Funcaptcha was not solved. Please try again';
+
+]]></add>
+        </operation>
+    </file>
+    <file name="$languagedir/ManageSettings.english.php">
+        <operation>
+            <search position="after"><![CDATA[$txt['configure_verification_means'] = 'Configure Verification Methods';]]></search>
+            <add><![CDATA[
+                //Funcatpcha for SMF
+                $txt['funcaptcha_settings'] = 'FunCaptcha Settings';
+                $txt['setting_funcaptcha_is_active'] = 'Activate FunCaptcha';
+                $txt['setting_fc_theme'] = 'FunCaptcha Theme';
+                $txt['setting_fc_theme_desc'] = 'This will change the appearance of FunCaptcha (see <a href="http://www.funcaptcha.co/themes/" target="\&quot;_blank\&quot;">here</a> for what they look like)';
+                $txt['fc_theme_standard'] = 'Standard';
+                $txt['fc_theme_vbulletin'] = 'vBulletin Blue';
+                $txt['fc_theme_white'] = 'White';
+                $txt['fc_theme_black'] = 'Black';
+                $txt['fc_theme_automotive'] = 'Automotive';
+                $txt['setting_fc_security'] = 'FunCaptcha Security Level ';
+                $txt['setting_fc_security_desc'] = 'If you choose Automatic, security starts at the lowest level, and rises and falls automatically, adjusted by FunCaptcha\'s monitoring system. The Enhanced level has more challenges to solve, but is very hard for spammer programs to get past';
+                $txt['fc_security_enhanced'] = 'Always Enhanced';
+                $txt['fc_security_auto'] = 'Automatic';
+                $txt['fc_lightbox'] = 'FunCaptcha Lightbox Mode ';
+                $txt['fc_lightbox_desc'] = 'Lightbox mode will show FunCaptcha once the user submits your form, rather than on the page. Inline mode will show FunCaptcha on your page as the user completes your form. We recommend Lightbox for the best user experience';
+                $txt['fc_lightbox_inline'] = 'Inline';
+                $txt['fc_lightbox_on'] = 'Lightbox';
+                $txt['setting_fc_js_fallback'] = 'Javascript Fallback ';
+                $txt['setting_fc_js_fallback_desc'] = 'If the user does not have Javascript enabled, display a fallback CAPTCHA? (Most bots have Javascript disabled, we recommend you leave this disabled)';
+                $txt['fc_public_key'] = 'FunCaptcha Public Key';
+                $txt['fc_public_key_desc'] = 'Public Key (Register for this below)';
+                $txt['fc_private_key'] = 'FunCaptcha Private Key ';
+                $txt['fc_private_key_desc'] = 'Private Key (Register for this below)';
+                $txt['fc_proxy'] = 'Optional - Proxy Server ';
+                $txt['fc_proxy_desc'] = 'This field is optional - Proxy server (including port, eg: 111.11.11.111:8080): ';
+                $txt['fc_posts'] = 'Number of posts';
+                $txt['fc_posts_desc'] = 'Enter the number of posts until you want to show human verification to new user. Enter 0 if you want to disable this option';
+
+        ]]></add>
+        </operation>
+    </file>
+    <file name="$languagedir/Help.english.php">
+        <operation>
+            <search position="after"><![CDATA[$helptxt['failed_login_threshold'] = 'Set the number of failed login attempts before directing the user to the password reminder screen.';]]></search>
+            <add><![CDATA[
+// FunCaptcha for SMF
+$helptxt['funcaptcha_settings'] = 'You must register at funcaptcha to get private and public key in order to use this product';
+
+]]></add>
+        </operation>
+    </file>
+</modification>
