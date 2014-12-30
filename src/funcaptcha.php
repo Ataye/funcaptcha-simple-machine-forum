@@ -18,7 +18,52 @@
  * THE SOFTWARE.
  *
  */
-define("FUNCAPTCHA_SERVER", "funcaptcha.co");
+define("FUNCAPTCHA_SERVER", "funcaptcha.com");
+
+if ( ! class_exists('FunCaptcha_SMF')):
+	class FunCaptcha_SMF
+	{
+		public static function UpdatePackageRemoteOptions($remote_options)
+		{
+			$arOptMap = array(
+				'proxy' => 'fc_proxy',
+				'security_level' => 'fc_security',
+				'lightbox' => 'fc_lightbox',
+				'theme' => 'fc_theme',
+				'noscript_support' => 'fc_js_fallback',
+			);
+			
+			foreach(array_keys($remote_options) as $key)
+			{
+				try{
+					if (isset($arOptMap[$key]))
+						FunCaptcha_SMF::SetSetting($arOptMap[$key], $remote_options[$key]);
+				} catch (\Exception $e) {}
+			}
+		}
+		
+		public static function SetSetting($variable, $value)
+		{
+			global $smcFunc, $modSettings;
+			
+			// get the settings, if it doesn't exist we'll insert else update:
+			if(!isset($modSettings[$variable]))
+				$smcFunc['db_query']('', '
+					INSERT INTO {db_prefix}settings
+					VALUES ("'.$variable.'", "'.$value.'")',
+					array()
+				);
+			else
+				$smcFunc['db_query']('', '
+					UPDATE {db_prefix}settings
+					SET value="'.$value.'"
+					WHERE variable="'.$variable.'"',
+					array()
+				);
+		}
+	}
+endif;
+
 
 // Define class if it does not already exist
 if ( ! class_exists('FUNCAPTCHA')):
@@ -27,21 +72,23 @@ if ( ! class_exists('FUNCAPTCHA')):
 	// Set defaults for values that can be specified via the config file or passed in via __construct.
 	protected $funcaptcha_public_key = '';
 	protected $funcaptcha_private_key = '';
-	protected $funcaptcha_host = 'funcaptcha.co';
+	protected $funcaptcha_host = 'funcaptcha.com';
 	protected $funcaptcha_challenge_url = '';
 	protected $funcaptcha_debug = FALSE;
-	protected $funcaptcha_api_type = "SMF";
-	protected $funcaptcha_plugin_version = "1.0.0.0";
+	protected $funcaptcha_api_type = "php";
+	protected $funcaptcha_plugin_version = "1.0.1";
 	protected $funcaptcha_security_level = 0;
 	protected $funcaptcha_lightbox_mode = FALSE;
 	protected $funcaptcha_lightbox_button_id = "";
 	protected $funcaptcha_lightbox_submit_javascript = "";
 	protected $session_token;
 	protected $funcaptcha_theme = 0;
+	protected $funcaptcha_language = "en";
 	protected $funcaptcha_proxy;
 	protected $funcaptcha_json_path = "json.php";
 	protected $funcaptcha_nojs_fallback = false;
 	protected $version = '1.0.1';
+	public $remote_options;
 
 	/**
 	 * Constructor
@@ -95,6 +142,7 @@ if ( ! class_exists('FUNCAPTCHA')):
 			'api_type'				=> $this->funcaptcha_api_type,
 			'plugin_version'		=> $this->funcaptcha_plugin_version,
 			'security_level'		=> $this->funcaptcha_security_level,
+			'language'				=> $this->funcaptcha_language,
 			'noscript_support'		=> $this->funcaptcha_nojs_fallback,
 			'lightbox'				=> $this->funcaptcha_lightbox_mode,
 			'lightbox_button_id'	=> $this->funcaptcha_lightbox_button_id,
@@ -107,7 +155,7 @@ if ( ! class_exists('FUNCAPTCHA')):
 		$session = $this->doPostReturnObject('/fc/gt/', $data);
 		$this->session_token = $session->token;
 		$this->funcaptcha_challenge_url = $session->challenge_url;
-
+		
 		if (!$this->funcaptcha_challenge_url)
 		{
 			$this->msgLog("ERROR", "Warning: Couldn't retrieve challenge url.");
@@ -125,7 +173,19 @@ if ( ! class_exists('FUNCAPTCHA')):
 		{
 			$this->msgLog("DEBUG", "Session token: '$this->session_token'");
 		}
+		
+		// get inbound settings and update local:
+		if (isset($session->remote_options))
+		{
+			// set public accessible array:
+			$this->remote_options = $session->remote_options;
+			FunCaptcha_SMF::UpdatePackageRemoteOptions($session->remote_options);
+			
+			// update local props:
+			$this->updateLocal($session->remote_options);
+		}
 
+		
 		if ($this->session_token && $this->funcaptcha_challenge_url && $this->funcaptcha_host) 
 		{
 			//return html to generate captcha.
@@ -141,6 +201,31 @@ if ( ! class_exists('FUNCAPTCHA')):
 			$style = "padding: 10px; border: 1px solid #b1abb2; background: #f1f1f1; color: #000000;";
 			$message = "The CAPTCHA cannot be displayed. This may be a configuration or server problem. You may not be able to continue. Please visit our <a href='http://funcaptcha.co/status' target='_blank'>status page</a> for more information or to contact us.";
 			echo "<p style=\"$style\">$message</p>\n";
+		}
+	}
+	
+	/**
+	 * Internal function - updates local properties with inbound values.
+	 *
+	 * @param array $remote_options - inbound remote server set options
+	 * @return null
+	 */
+	private function updateLocal($remote_options)
+	{
+		$arOptMap = array(
+			'proxy' => 'funcaptcha_proxy',
+			'security_level' => 'funcaptcha_security',
+			'lightbox' => 'funcaptcha_lightbox',
+			'theme' => 'funcaptcha_theme',
+			'noscript_support' => 'funcaptcha_javascript',
+		);
+		
+		foreach(array_keys($remote_options) as $key)
+		{
+			try{
+				if (isset($arOptMap[$key]) && isset($this->{$arOptMap[$key]}))
+					$this->{$arOptMap[$key]} = $remote_options[$key];
+			} catch (\Exception $e) {}
 		}
 	}
 
@@ -172,6 +257,17 @@ if ( ! class_exists('FUNCAPTCHA')):
 	public function setTheme($theme) {
 		$this->funcaptcha_theme = $theme;
 		$this->msgLog("DEBUG", "Theme: '$this->funcaptcha_theme'");
+	}
+
+	/**
+	 * Set language of FunCaptcha
+	 *
+	 * @param string $language - language to set, defaults to english if not available.
+	 * @return boolean
+	 */
+	public function setLanguage($language) {
+		$this->funcaptcha_language = $language;
+		$this->msgLog("DEBUG", "Language: '$this->funcaptcha_theme'");
 	}
 
 	/**
