@@ -18,7 +18,7 @@
  * THE SOFTWARE.
  *
  */
-define("FUNCAPTCHA_SERVER", "funcaptcha.com");
+define("FUNCAPTCHA_SERVER", "funcaptcha.co");
 
 if ( ! class_exists('FunCaptcha_SMF')):
 	class FunCaptcha_SMF
@@ -72,7 +72,7 @@ if ( ! class_exists('FUNCAPTCHA')):
 	// Set defaults for values that can be specified via the config file or passed in via __construct.
 	protected $funcaptcha_public_key = '';
 	protected $funcaptcha_private_key = '';
-	protected $funcaptcha_host = 'funcaptcha.com';
+	protected $funcaptcha_host = 'funcaptcha.co';
 	protected $funcaptcha_challenge_url = '';
 	protected $funcaptcha_debug = FALSE;
 	protected $funcaptcha_api_type = "php";
